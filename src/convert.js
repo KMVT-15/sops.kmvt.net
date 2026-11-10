@@ -33,6 +33,28 @@ export function linkButton(rt) {
 }
 
 /**
+ * A page's headings, wherever they sit (e.g. inside a card), for the "On this page" outline.
+ * `depth` is how far Notion indents it: the number of enclosing headings, so an H3 directly under
+ * an H1 is one step in, not two.
+ */
+export function outline(model) {
+  const found = [], open = [];
+  const walk = (blocks = []) => {
+    for (const b of blocks) {
+      if (b.type === "heading" && b.plain.trim()) {
+        while (open.length && open.at(-1) >= b.level) open.pop();
+        found.push({ id: b.id, text: b.plain.trim(), depth: open.length });
+        open.push(b.level);
+      }
+      walk(b.children);
+      for (const part of [...(b.items || []), ...(b.cols || [])]) walk(part.children);
+    }
+  };
+  walk(model);
+  return found;
+}
+
+/**
  * @param {Array} blocks  loaded blocks (see load.js)
  * @param {object} ctx  passed to rich(): { link, timeZone }
  */

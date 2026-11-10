@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Assets } from "./assets.js";
 import { acquireLock, MARKER, markerText, releaseLock, snapshot } from "./changes.js";
-import { convert } from "./convert.js";
+import { convert, outline } from "./convert.js";
 import { fmtDate, fmtDateTime, slugify } from "./html.js";
 import { createLinker } from "./links.js";
 import { loadBlocks } from "./load.js";
@@ -87,17 +87,18 @@ export async function build({
       const ctx = { link: createLinker({ pageId: e.id, slugById, targets }), timeZone };
       const model = convert(blocks, ctx);
       return {
-        ...e, ctx, model, targets, databases, edited: page.last_edited_time,
+        ...e, ctx, model, targets, databases, edited: page.last_edited_time, headings: outline(model),
         icon: await assets.icon(page.icon), updated: fmtDate(page.last_edited_time, timeZone),
       };
     }));
 
     const { cssHref, jsHref } = await writeStatic(tmp);
-    const targets = new Set(docs.flatMap((d) => [...d.targets]));
+    // The "On this page" outline jumps to headings, so those need anchors too.
+    const targets = new Set(docs.flatMap((d) => [...d.targets, ...d.headings.map((h) => compact(h.id))]));
     const emitted = new Set();
     for (const doc of docs) {
       const content = render(doc.model, { ...doc.ctx, targets, emitted });
-      await fs.writeFile(path.join(tmp, `${doc.slug}.html`), sopPage({ title: doc.title, updated: doc.updated, content, cssHref, jsHref }));
+      await fs.writeFile(path.join(tmp, `${doc.slug}.html`), sopPage({ title: doc.title, updated: doc.updated, content, cssHref, jsHref, headings: doc.headings }));
       log(`• ${doc.title} → ${doc.slug}.html`);
     }
     for (const doc of docs) {

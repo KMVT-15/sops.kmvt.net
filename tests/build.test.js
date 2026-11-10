@@ -58,6 +58,14 @@ test("builds a home page plus one page per SOP, leaving out Template", async () 
 
   const ex = readFileSync(path.join(out, "example-city.html"), "utf8");
   assert.match(ex, new RegExp(`<a href="sunnyvale.html#b-${anchor}" class="internal">Operator PC</a>`));
+
+  // "On this page" outline: one dash and one link per heading, each jumping to a real anchor
+  const svToc = /<nav class="toc".*?<\/nav>/s.exec(sv)[0];
+  const tocLinks = [...svToc.matchAll(/class="toc-link" style="--d:(\d)" href="(#b-[0-9a-f]{32})">([^<]+)</g)];
+  assert.deepEqual(tocLinks.slice(0, 2).map((m) => [m[1], m[3]]), [["0", "Overview"], ["1", "Quick Checklist"]]);
+  assert.equal((svToc.match(/class="toc-dash"/g) || []).length, tocLinks.length);
+  for (const [, , href] of tocLinks) assert.ok(sv.includes(` id="${href.slice(1)}"`), `${href} has an anchor on the page`);
+  assert.doesNotMatch(home, /class="toc"/, "the home page has no outline");
   assert.match(ex, /<a href="sunnyvale.html" class="internal"><span class="mention">Sunnyvale<\/span><\/a>/);
   assert.match(ex, /<a href="assets\/files\/[0-9a-f]{12}-Wiring%20diagram\.pdf">Wiring diagram\.pdf<\/a>/);
   assert.doesNotMatch(ex, /must never appear/);
