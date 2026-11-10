@@ -41,6 +41,7 @@ function toc(headings) {
 ${links}
 </ul></div>
 </nav>
+<div class="toc-scrim"></div>
 `;
 }
 

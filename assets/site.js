@@ -59,9 +59,7 @@
     if (on) links[current].focus({ preventScroll: true });
   };
   btn.addEventListener("click", () => setOpen(!isOpen()));
-  toc.addEventListener("click", (e) => { // a tap on the backdrop (a ::before of .toc)
-    if (e.target === toc) setOpen(false);
-  });
+  document.querySelector(".toc-scrim").addEventListener("click", () => setOpen(false));
   toc.addEventListener("mouseleave", () => {
     if (usesHover.matches && isOpen()) setOpen(false);
   });

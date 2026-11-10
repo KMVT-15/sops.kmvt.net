@@ -127,6 +127,7 @@ a.button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .toc-link:hover{background:rgba(55,53,47,.08);color:var(--ink)}
 .toc-link[aria-current]{color:#1b74cc}
 .toc-btn:focus-visible,.toc-link:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+.toc-scrim{display:none}
 
 @media screen and (hover:hover) and (min-width:901px){
   .toc{top:15vh;right:28px}
@@ -145,8 +146,18 @@ a.button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
     box-shadow:0 0 0 1px rgba(15,15,15,.06),0 3px 12px rgba(15,15,15,.16)}
   .toc-card{right:0;bottom:54px;width:min(300px,calc(100vw - 32px));max-height:70vh;max-height:70dvh;padding:12px;--toc-slide:translateY(8px)}
   .toc-link{padding:9px 6px;font-size:15px;line-height:19px}
-  /* catches a tap outside the card, so it can't tick a to-do or follow a link by accident */
-  .toc.open::before{content:"";position:fixed;inset:0;background:rgba(24,20,28,.18)}
+  /* Dims the page and catches a tap outside the card, so it can't tick a to-do or follow a link by accident.
+     Deliberately not position:fixed: iOS 26 Safari doesn't paint fixed elements under its bars, but it does
+     paint page content there. For the same reason the html background darkens to white under the scrim,
+     which covers the strips beyond the page. It animates the color, not opacity, to avoid a page-sized layer. */
+  html{background:#fff;transition:background-color .2s ease}
+  html:has(.toc.open){background:#d5d5d6}
+  body{position:relative}
+  .toc-scrim{display:block;position:absolute;inset:0;z-index:19;background:rgba(24,20,28,0);pointer-events:none;transition:background-color .2s ease}
+  .toc.open + .toc-scrim{background:rgba(24,20,28,.18);pointer-events:auto}
 }
-@media (prefers-reduced-motion:reduce){.toc-card,.toc-dash::before{transition:none !important;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .toc-card,.toc-dash::before{transition:none !important;transform:none}
+  html,.toc-scrim{transition:none !important}
+}
 @media print{.toc{display:none}}

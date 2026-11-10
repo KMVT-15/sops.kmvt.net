@@ -65,6 +65,7 @@ test("builds a home page plus one page per SOP, leaving out Template", async () 
   assert.deepEqual(tocLinks.slice(0, 2).map((m) => [m[1], m[3]]), [["0", "Overview"], ["1", "Quick Checklist"]]);
   assert.equal((svToc.match(/class="toc-dash"/g) || []).length, tocLinks.length);
   for (const [, , href] of tocLinks) assert.ok(sv.includes(` id="${href.slice(1)}"`), `${href} has an anchor on the page`);
+  assert.match(sv, /<\/nav>\n<div class="toc-scrim"><\/div>/, "the backdrop directly follows the outline (site.css uses +)");
   assert.doesNotMatch(home, /class="toc"/, "the home page has no outline");
   assert.match(ex, /<a href="sunnyvale.html" class="internal"><span class="mention">Sunnyvale<\/span><\/a>/);
   assert.match(ex, /<a href="assets\/files\/[0-9a-f]{12}-Wiring%20diagram\.pdf">Wiring diagram\.pdf<\/a>/);
