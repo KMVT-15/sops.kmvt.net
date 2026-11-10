@@ -64,7 +64,9 @@
     if (usesHover.matches && isOpen()) setOpen(false);
   });
   toc.addEventListener("focusout", (e) => {
-    if (isOpen() && !toc.contains(e.relatedTarget)) setOpen(false);
+    // Only when focus moves somewhere else (tabbing away). Safari doesn't focus a tapped button, so
+    // relatedTarget is null there; closing then would make the tap's click reopen the card.
+    if (isOpen() && e.relatedTarget && !toc.contains(e.relatedTarget)) setOpen(false);
   });
   addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || !isOpen()) return;
