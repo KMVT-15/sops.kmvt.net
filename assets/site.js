@@ -1,6 +1,91 @@
 // Behavior for SOP pages. The HTML works without it (it's the printable document);
 // this adds the on-screen extras, and fits photos to the printed pages.
 
+// "On this page" outline, like Notion's. The dark dash and blue link follow the reading position.
+// With a mouse the card opens on hover (site.css); the button opens it for touch and keyboards.
+(() => {
+  const toc = document.querySelector(".toc");
+  if (!toc) return;
+  const btn = toc.querySelector(".toc-btn");
+  const card = toc.querySelector(".toc-card");
+  const dashes = [...toc.querySelectorAll(".toc-dash")];
+  const links = [...card.querySelectorAll("a")];
+  const heads = links.map((a) => document.getElementById(a.hash.slice(1)));
+  const usesHover = matchMedia("(hover: hover) and (min-width: 901px)"); // same test as site.css
+  const smooth = matchMedia("(prefers-reduced-motion: no-preference)");
+
+  let current = -1;
+  let picked = links.findIndex((a) => a.hash === location.hash); // chosen heading, until the reader scrolls
+  const setCurrent = (i) => {
+    if (i === current) return;
+    links[current]?.removeAttribute("aria-current");
+    dashes[current]?.classList.remove("on");
+    links[i].setAttribute("aria-current", "location");
+    dashes[i].classList.add("on");
+    current = i;
+    const box = card.getBoundingClientRect(), r = links[i].getBoundingClientRect();
+    if (r.top < box.top || r.bottom > box.bottom) card.scrollTop += r.top - box.top - box.height / 3;
+  };
+  // Notion's rule: the first heading on screen, or if none is, the last one above the screen.
+  const reading = () => {
+    const first = heads.findIndex((h) => h.getBoundingClientRect().top >= 0);
+    if (first < 0) return heads.length - 1;
+    return heads[first].getBoundingClientRect().top < innerHeight ? first : Math.max(first - 1, 0);
+  };
+  const update = () => setCurrent(picked >= 0 ? picked : reading());
+  let queued = false;
+  const queue = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      update();
+    });
+  };
+  addEventListener("scroll", queue, { passive: true });
+  addEventListener("resize", queue);
+  for (const type of ["wheel", "touchmove", "keydown"]) {
+    addEventListener(type, () => {
+      picked = -1;
+      queue();
+    }, { passive: true });
+  }
+  update();
+
+  const isOpen = () => toc.classList.contains("open");
+  const setOpen = (on) => {
+    toc.classList.toggle("open", on);
+    btn.setAttribute("aria-expanded", String(on));
+    if (on) links[current].focus({ preventScroll: true });
+  };
+  btn.addEventListener("click", () => setOpen(!isOpen()));
+  toc.addEventListener("click", (e) => { // a tap on the backdrop (a ::before of .toc)
+    if (e.target === toc) setOpen(false);
+  });
+  toc.addEventListener("mouseleave", () => {
+    if (usesHover.matches && isOpen()) setOpen(false);
+  });
+  toc.addEventListener("focusout", (e) => {
+    if (isOpen() && !toc.contains(e.relatedTarget)) setOpen(false);
+  });
+  addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !isOpen()) return;
+    setOpen(false);
+    btn.focus({ preventScroll: true });
+  });
+
+  card.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a) return;
+    e.preventDefault();
+    picked = links.indexOf(a);
+    setCurrent(picked);
+    if (isOpen()) setOpen(false);
+    history.pushState(null, "", a.hash);
+    heads[picked].scrollIntoView({ behavior: smooth.matches ? "smooth" : "auto" });
+  });
+})();
+
 // To-do items can be checked off: click the box or the item's text, or Space/Enter on
 // the box. Checks aren't saved; reloading the page starts a fresh list.
 (() => {

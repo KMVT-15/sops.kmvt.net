@@ -1,6 +1,7 @@
 // Full-page HTML shells: one per SOP, plus the home page that lists them.
 import { readFileSync } from "node:fs";
 import { esc } from "./html.js";
+import { compact } from "./notion.js";
 
 const LOGO = readFileSync(new URL("../assets/logo.svg", import.meta.url), "utf8").trim();
 const EYEBROW = "Standard Operating Procedure";
@@ -23,6 +24,26 @@ function pageCss(title) {
     '@bottom-right{content:"Page " counter(page) " of " counter(pages);font:8pt/1 "Futura PT","Jost",sans-serif;color:#6f6a76}}';
 }
 
+const TOC_ICON = '<svg class="toc-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M8 12h12M8 18h12"/></svg>';
+
+/**
+ * The "On this page" outline, like Notion's: dashes at the right edge that open a card of headings.
+ * On phones the same button is a round floating one. Styles in site.css, behavior in site.js.
+ */
+function toc(headings) {
+  if (!headings.length) return "";
+  const dashes = headings.map((h) => `<span class="toc-dash" style="--d:${h.depth}"></span>`).join("");
+  const links = headings.map((h) => `<li><a class="toc-link" style="--d:${h.depth}" href="#b-${compact(h.id)}">${esc(h.text)}</a></li>`).join("\n");
+  return `<nav class="toc" aria-label="On this page">
+<button type="button" class="toc-btn" aria-label="On this page" aria-expanded="false"><span class="toc-rail" aria-hidden="true">${dashes}</span>${TOC_ICON}</button>
+<div class="toc-card" tabindex="-1"><ul>
+${links}
+</ul></div>
+</nav>
+`;
+}
+
 /**
  * @param {object} p
  * @param {string} p.title
@@ -30,13 +51,14 @@ function pageCss(title) {
  * @param {string} p.content  rendered body HTML
  * @param {string} p.cssHref
  * @param {string} p.jsHref  photo viewer script
+ * @param {Array} p.headings  outline() of the page
  */
-export function sopPage({ title, updated, content, cssHref, jsHref }) {
+export function sopPage({ title, updated, content, cssHref, jsHref, headings }) {
   const meta = updated ? `<p class="doc-meta">Updated ${esc(updated)}</p>` : "";
   const extra = `\n<style>${pageCss(title)}</style>` + (jsHref ? `\n<script src="${esc(jsHref)}" defer></script>` : "");
   return `${head(`${title} · KMVT SOP`, cssHref, extra)}
 <body>
-<main class="sheet">
+${toc(headings)}<main class="sheet">
 <header class="doc-head"><a class="home-link" href="index.html" aria-label="All SOPs">${LOGO}</a></header>
 <div class="title-block">
 <p class="eyebrow">${esc(EYEBROW)}</p>

@@ -111,3 +111,42 @@ a.button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
   .sop-link{break-inside:avoid}
   .sop-chev{display:none}
 }
+
+/* "On this page" outline, like Notion's (assets/site.js). With a mouse on a wide screen: one dash per
+   heading at the right edge, and hovering opens a card of the headings. On phones and tablets: a round
+   button at the bottom right that opens the same card. The script's breakpoint must match. Never printed. */
+.toc{position:fixed;z-index:20;line-height:17px}
+.toc ul{list-style:none;margin:0;padding:0}
+.toc li{margin:0}
+.toc-btn{display:block;padding:0;border:0;background:none;cursor:pointer}
+.toc-card{position:absolute;width:233px;padding:18px;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain;outline:0;background:#fff;border-radius:12px;
+  box-shadow:0 0 0 1px rgba(15,15,15,.05),0 4px 18px rgba(15,15,15,.08);
+  opacity:0;visibility:hidden;transform:var(--toc-slide);transition:opacity .16s ease,transform .16s ease,visibility 0s .16s}
+.toc.open .toc-card{opacity:1;visibility:visible;transform:none;transition:opacity .16s ease,transform .16s ease,visibility 0s}
+.toc-link{display:block;margin-left:calc(var(--d) * 12px);padding:4px;border-radius:6px;color:#787774;font-size:14px;text-decoration:none}
+.toc-link:hover{background:rgba(55,53,47,.08);color:var(--ink)}
+.toc-link[aria-current]{color:#1b74cc}
+.toc-btn:focus-visible,.toc-link:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+
+@media screen and (hover:hover) and (min-width:901px){
+  .toc{top:15vh;right:28px}
+  .toc-icon{display:none}
+  .toc-rail{display:flex;flex-direction:column;align-items:flex-end;padding-left:12px;max-height:calc(85vh - 24px)}
+  .toc-dash{flex:0 1 14px;min-height:3px;display:flex;align-items:center}
+  .toc-dash::before{content:"";width:calc(16px - var(--d) * 4px);min-width:8px;height:2px;border-radius:1px;background:rgba(55,53,47,.16);transition:background-color .25s ease}
+  .toc-dash.on::before{background:#2f2e2b}
+  .toc-card{top:-4px;right:-10px;max-height:calc(85vh - 20px);--toc-slide:translateX(8px)}
+  .toc:hover .toc-card{opacity:1;visibility:visible;transform:none;transition:opacity .16s ease,transform .16s ease,visibility 0s}
+}
+@media screen and (hover:none),screen and (max-width:900px){
+  .toc{right:16px;bottom:16px}
+  .toc-rail{display:none}
+  .toc-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#fff;color:#55534e;
+    box-shadow:0 0 0 1px rgba(15,15,15,.06),0 3px 12px rgba(15,15,15,.16)}
+  .toc-card{right:0;bottom:54px;width:min(300px,calc(100vw - 32px));max-height:70vh;max-height:70dvh;padding:12px;--toc-slide:translateY(8px)}
+  .toc-link{padding:9px 6px;font-size:15px;line-height:19px}
+  /* catches a tap outside the card, so it can't tick a to-do or follow a link by accident */
+  .toc.open::before{content:"";position:fixed;inset:0;background:rgba(24,20,28,.18)}
+}
+@media (prefers-reduced-motion:reduce){.toc-card,.toc-dash::before{transition:none !important;transform:none}}
+@media print{.toc{display:none}}

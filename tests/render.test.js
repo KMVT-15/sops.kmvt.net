@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assignSlugs } from "../src/build.js";
-import { convert, linkButton } from "../src/convert.js";
+import { convert, linkButton, outline } from "../src/convert.js";
 import { createLinker } from "../src/links.js";
 import { render } from "../src/render.js";
 import { rt } from "./fixtures/notion.js";
@@ -106,4 +106,21 @@ test("a paragraph that's only a link becomes a button; anything else stays a par
   });
   assert.equal(render(model), '<p class="buttons"><a class="button" href="https://m.example" target="_blank" rel="noopener">Open map</a> ' +
     '<a class="button" href="#b-3f57446c6b1f80dfbee3d81e9d43a9f2">Glossary</a></p>\n<p>after</p>');
+});
+
+test("outline: every heading at any depth, in page order, indented by enclosing headings like Notion", () => {
+  const h = (level, text) => ({ type: "heading", id: text, level, plain: text, html: text });
+  const model = [
+    h(1, "Overview"),
+    { type: "callout", id: "c", children: [h(2, "In a card"), h(4, "H4 under H2")] },
+    { type: "columns", id: "cs", cols: [{ id: "c1", children: [h(2, "In a column")] }] },
+    h(1, "Glossary"),
+    { type: "list", kind: "ul", items: [{ id: "i", children: [h(3, "H3 under H1")] }] },
+    { type: "toggle", id: "t", children: [h(3, "Next H3")] },
+    h(2, "   "),
+  ];
+  assert.deepEqual(outline(model).map((x) => [x.depth, x.text]), [
+    [0, "Overview"], [1, "In a card"], [2, "H4 under H2"], [1, "In a column"], [0, "Glossary"], [1, "H3 under H1"], [1, "Next H3"],
+  ]);
+  assert.deepEqual(outline([h(2, "Starts at H2"), h(3, "Then H3")]).map((x) => x.depth), [0, 1]);
 });
